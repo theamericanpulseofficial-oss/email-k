@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Email Agent AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{
+  --bg:#0a0b14; --bg2:#0f111c;
+  --glass:rgba(255,255,255,.06); --glass-brd:rgba(255,255,255,.10);
+  --txt:#eef0f7; --txt-dim:#9aa0b4; --txt-mute:#6a7086;
+  --accent:#7c6cff; --accent2:#4fd1c5; --danger:#ff5c7a; --warn:#ffb454; --ok:#4fd18c;
+  --grad:linear-gradient(135deg,#7c6cff,#4fd1c5);
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:radial-gradient(1200px 800px at 80% -10%, #1a1440 0%, transparent 60%),
+             radial-gradient(1000px 700px at -10% 110%, #0d2b2a 0%, transparent 55%),
+             var(--bg);
+  color:var(--txt); font-family:'Inter',sans-serif; min-height:100vh;
+  display:flex; justify-content:center;
+}
+#app{width:100%; max-width:520px; min-height:100vh; display:flex; flex-direction:column; position:relative;}
+h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif;}
+.hide{display:none !important;}
+::-webkit-scrollbar{width:0; height:0;}
+
+/* Topbar */
+.topbar{
+  position:sticky; top:0; z-index:20; padding:16px 18px 12px;
+  background:linear-gradient(to bottom, rgba(10,11,20,.92), rgba(10,11,20,.7) 70%, transparent);
+  backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:space-between;
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand .mark{width:34px; height:34px; border-radius:10px; background:var(--grad); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(124,108,255,.4);}
+.brand .mark svg{width:18px; height:18px; stroke:#0a0b14;}
+.brand .name{font-size:15px; font-weight:700; letter-spacing:.2px;}
+.brand .sub{font-size:11px; color:var(--txt-mute);}
+.status-pill{display:flex; align-items:center; gap:6px; font-size:11px; padding:6px 10px; border-radius:20px; background:var(--glass); border:1px solid var(--glass-brd); color:var(--txt-dim);}
+.dot{width:7px; height:7px; border-radius:50%; background:var(--txt-mute);}
+.dot.on{background:var(--ok); box-shadow:0 0 8px var(--ok);}
+
+/* Screens */
+.screen{flex:1; padding:4px 16px 90px; overflow-y:auto;}
+.card{background:var(--glass); border:1px solid var(--glass-brd); border-radius:18px; padding:16px; backdrop-filter:blur(14px); margin-bottom:12px;}
+.card + .card{margin-top:0;}
+.section-title{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--txt-mute); margin:18px 4px 8px; font-weight:600;}
+.section-title:first-child{margin-top:4px;}
+.row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.muted{color:var(--txt-dim); font-size:13px; line-height:1.5;}
+.tiny{color:var(--txt-mute); font-size:11px; line-height:1.5;}
+
+/* Buttons & inputs */
+.btn{
+  border:none; border-radius:14px; padding:12px 16px; font-family:'Inter'; font-weight:600; font-size:14px;
+  cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:.15s transform,.15s opacity;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--grad); color:#0a0b14;}
+.btn-ghost{background:var(--glass); color:var(--txt); border:1px solid var(--glass-brd);}
+.btn-danger{background:rgba(255,92,122,.15); color:var(--danger); border:1px solid rgba(255,92,122,.3);}
+.btn-ok{background:rgba(79,209,140,.15); color:var(--ok); border:1px solid rgba(79,209,140,.3);}
+.btn-sm{padding:8px 12px; font-size:12.5px; border-radius:10px;}
+.btn-block{width:100%;}
+input[type=text],input[type=password],input[type=number],textarea,select{
+  width:100%; background:rgba(255,255,255,.05); border:1px solid var(--glass-brd); color:var(--txt);
+  padding:11px 13px; border-radius:12px; font-family:'Inter'; font-size:14px; outline:none;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+label{font-size:12.5px; color:var(--txt-dim); font-weight:600; display:block; margin:0 0 6px;}
+.field{margin-bottom:14px;}
+textarea{resize:vertical; min-height:70px;}
+.switch{position:relative; width:44px; height:25px; flex:none;}
+.switch input{opacity:0; width:0; height:0;}
+.slider{position:absolute; inset:0; background:rgba(255,255,255,.15); border-radius:20px; cursor:pointer; transition:.2s;}
+.slider:before{content:""; position:absolute; width:19px; height:19px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;}
+.switch input:checked + .slider{background:var(--grad);}
+.switch input:checked + .slider:before{transform:translateX(19px);}
+.chip{display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:4px 10px; border-radius:20px; font-weight:600;}
+.chip.blue{background:rgba(124,108,255,.15); color:#a79cff;}
+.chip.green{background:rgba(79,209,140,.15); color:var(--ok);}
+.chip.amber{background:rgba(255,180,84,.15); color:var(--warn);}
+.chip.red{background:rgba(255,92,122,.15); color:var(--danger);}
+.empty{text-align:center; padding:50px 20px; color:var(--txt-mute);}
+.empty svg{width:40px; height:40px; opacity:.4; margin-bottom:10px;}
+
+/* Bottom nav */
+.bottomnav{
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:520px;
+  display:flex; justify-content:space-around; padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  background:rgba(12,13,22,.85); backdrop-filter:blur(16px); border-top:1px solid var(--glass-brd); z-index:30;
+}
+.navbtn{background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--txt-mute); font-size:10.5px; font-weight:600; padding:6px 10px; border-radius:12px; flex:1;}
+.navbtn svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:2;}
+.navbtn.active{color:var(--accent);}
+.navbtn.active svg{stroke:var(--accent);}
+
+/* Chat */
+#chatlog{display:flex; flex-direction:column; gap:12px; padding-bottom:10px;}
+.msg{max-width:86%; padding:12px 14px; border-radius:16px; font-size:14px; line-height:1.5; white-space:pre-wrap;}
+.msg.user{align-self:flex-end; background:var(--grad); color:#0a0b14; border-bottom-right-radius:4px; font-weight:500;}
+.msg.ai{align-self:flex-start; background:var(--glass); border:1px solid var(--glass-brd); border-bottom-left-radius:4px;}
+.msg.sys{align-self:center; background:transparent; color:var(--txt-mute); font-size:12px; text-align:center;}
+.actioncard{align-self:flex-start; max-width:92%; width:92%; background:var(--glass); border:1px solid rgba(124,108,255,.35); border-radius:16px; padding:14px; }
+.actioncard .hd{display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:12px; color:#a79cff; font-weight:700; text-transform:uppercase; letter-spacing:.5px;}
+.actioncard .field-row{font-size:12.5px; color:var(--txt-dim); margin-bottom:4px;}
+.actioncard .field-row b{color:var(--txt); font-weight:600;}
+.actioncard .body-preview{background:rgba(0,0,0,.25); border-radius:10px; padding:10px; font-size:13px; margin:8px 0; max-height:160px; overflow-y:auto; white-space:pre-wrap;}
+.actioncard .actions{display:flex; gap:8px; margin-top:8px;}
+.chatbar{position:fixed; bottom:64px; left:50%; transform:translateX(-50%); width:100%; max-width:520px; padding:8px 14px; background:linear-gradient(to top, var(--bg) 55%, transparent); z-index:25; display:flex; gap:8px;}
+.chatbar textarea{flex:1; min-height:44px; max-height:110px; border-radius:20px; padding:11px 16px;}
+.chatbar .sendbtn{width:44px; height:44px; border-radius:50%; background:var(--grad); border:none; display:flex; align-items:center; justify-content:center; flex:none;}
+.chatbar .sendbtn svg{width:19px; height:19px; stroke:#0a0b14; fill:#0a0b14;}
+.typing{display:flex; gap:4px; padding:6px 2px;}
+.typing span{width:6px; height:6px; border-radius:50%; background:var(--txt-mute); animation:blink 1.2s infinite;}
+.typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.2;} 40%{opacity:1;}}
+
+/* Inbox */
+.mail-item{display:flex; gap:12px; padding:13px 4px; border-bottom:1px solid var(--glass-brd); cursor:pointer;}
+.mail-item:last-child{border-bottom:none;}
+.avatar{width:38px; height:38px; border-radius:50%; background:var(--grad); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:#0a0b14; flex:none;}
+.mail-meta{flex:1; min-width:0;}
+.mail-top{display:flex; justify-content:space-between; gap:8px;}
+.mail-sender{font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.mail-time{font-size:11px; color:var(--txt-mute); flex:none;}
+.mail-subject{font-size:13px; color:var(--txt); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.mail-snippet{font-size:12.5px; color:var(--txt-mute); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.unread .avatar{box-shadow:0 0 0 2px var(--accent2);}
+.unread .mail-sender, .unread .mail-subject{color:#fff;}
+.searchbar{display:flex; gap:8px; margin-bottom:10px;}
+.searchbar input{flex:1;}
+
+/* thread view */
+#threadOverlay{position:fixed; inset:0; background:var(--bg); z-index:50; display:flex; flex-direction:column;}
+#threadOverlay .thd-top{padding:16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--glass-brd);}
+#threadOverlay .thd-body{flex:1; overflow-y:auto; padding:16px;}
+.iconbtn{width:36px; height:36px; border-radius:10px; background:var(--glass); border:1px solid var(--glass-brd); display:flex; align-items:center; justify-content:center; flex:none;}
+.iconbtn svg{width:18px; height:18px; stroke:var(--txt);}
+
+/* automation rules */
+.rule-card{margin-bottom:12px;}
+.rule-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+.rule-name{font-weight:700; font-size:15px;}
+.rule-desc{font-size:12.5px; color:var(--txt-dim); margin-top:4px; line-height:1.5;}
+.rule-foot{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+
+/* fab */
+.fab{position:fixed; bottom:150px; right:calc(50% - 260px + 18px); width:52px; height:52px; border-radius:50%; background:var(--grad); border:none; box-shadow:0 6px 24px rgba(124,108,255,.5); display:flex; align-items:center; justify-content:center; z-index:26;}
+.fab svg{width:22px; height:22px; stroke:#0a0b14; stroke-width:2.4;}
+@media(max-width:520px){ .fab{right:18px;} }
+
+/* modal */
+.modal-wrap{position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); z-index:60; display:flex; align-items:flex-end; justify-content:center;}
+.modal{width:100%; max-width:520px; background:var(--bg2); border-radius:22px 22px 0 0; padding:20px; max-height:88vh; overflow-y:auto; border-top:1px solid var(--glass-brd);}
+.modal .mhead{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+.modal .mhead h3{font-size:17px;}
+
+/* templates/contacts/reports */
+.tpl-item, .contact-item{padding:13px 0; border-bottom:1px solid var(--glass-brd);}
+.tpl-item:last-child, .contact-item:last-child{border-bottom:none;}
+.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+.stat-box{background:var(--glass); border:1px solid var(--glass-brd); border-radius:16px; padding:14px;}
+.stat-num{font-family:'Space Grotesk'; font-size:24px; font-weight:700;}
+.stat-lbl{font-size:11.5px; color:var(--txt-mute); margin-top:2px;}
+.bar-row{margin-bottom:10px;}
+.bar-row .bl{display:flex; justify-content:space-between; font-size:12px; color:var(--txt-dim); margin-bottom:4px;}
+.bar-track{height:8px; border-radius:6px; background:rgba(255,255,255,.06); overflow:hidden;}
+.bar-fill{height:100%; background:var(--grad); border-radius:6px;}
+.toast{position:fixed; bottom:150px; left:50%; transform:translateX(-50%); background:#1c1e2d; border:1px solid var(--glass-brd); padding:10px 18px; border-radius:30px; font-size:13px; z-index:100; box-shadow:0 8px 30px rgba(0,0,0,.4);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      <div><div class="name">Email Agent AI</div><div class="sub" id="topSub">Not connected</div></div>
+    </div>
+    <div class="status-pill" id="statusPill"><span class="dot" id="statusDot"></span><span id="statusTxt">Setup</span></div>
+  </div>
+
+  <!-- ===================== CHAT ===================== -->
+  <div class="screen" id="screen-chat">
+    <div id="chatlog"></div>
+  </div>
+
+  <!-- ===================== INBOX ===================== -->
+  <div class="screen hide" id="screen-inbox">
+    <div class="section-title">Inbox</div>
+    <div class="searchbar">
+      <input type="text" id="inboxSearch" placeholder="Search: from, subject, is:unread...">
+      <button class="btn btn-ghost btn-sm" onclick="loadInbox()">Go</button>
+    </div>
+    <div class="card" id="inboxList" style="padding:0 14px;">
+      <div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><div>Connect Gmail in Settings to see your inbox</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== AUTOMATIONS ===================== -->
+  <div class="screen hide" id="screen-auto">
+    <div class="row" style="margin-bottom:6px;">
+      <div class="section-title" style="margin:0;">Pending approvals</div>
+    </div>
+    <div id="approvalsList"></div>
+
+    <div class="row" style="margin-top:6px;">
+      <div class="section-title" style="margin:0;">Automation rules</div>
+      <button class="btn btn-primary btn-sm" onclick="openRuleModal()">+ New rule</button>
+    </div>
+    <div id="rulesList"></div>
+    <p class="tiny" style="margin-top:14px; padding:0 4px;">Automations run when you tap "Run now" below, and every 5 minutes automatically while this tab stays open in your browser. This is a browser-only app — it can't run in the background when the tab or app is fully closed.</p>
+    <button class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="runAutomationsNow(true)">▶ Run automations now</button>
+  </div>
+
+  <!-- ===================== TEMPLATES ===================== -->
+  <div class="screen hide" id="screen-templates">
+    <div class="section-title">AI training & tone rules</div>
+    <div class="card">
+      <div class="field">
+        <label>How should the AI write on your behalf?</label>
+        <textarea id="trainingNotes" placeholder="e.g. Always sign off as 'Team Kailash'. Keep replies under 80 words. Never promise refunds. Be friendly but professional." style="min-height:90px;"></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveTraining()">Save</button>
+    </div>
+
+    <div class="row" style="margin-top:6px;">
+      <div class="section-title" style="margin:0;">Reply templates</div>
+      <button class="btn btn-primary btn-sm" onclick="openTemplateModal()">+ New</button>
+    </div>
+    <div class="card" id="templatesList" style="padding:0 14px;"></div>
+  </div>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <div class="screen hide" id="screen-settings">
+    <div class="section-title">Gmail connection</div>
+    <div class="card">
+      <div id="gmailConnectedBlock" class="hide">
+        <div class="row"><div><div style="font-weight:700;" id="connectedEmail">—</div><div class="tiny">Connected via Google</div></div><span class="chip green">Connected</span></div>
+        <button class="btn btn-ghost btn-block" style="margin-top:12px;" onclick="disconnectGmail()">Disconnect Gmail</button>
+      </div>
+      <div id="gmailDisconnectedBlock">
+        <div class="field">
+          <label>Google OAuth Client ID</label>
+          <input type="text" id="googleClientId" placeholder="xxxxxxxx.apps.googleusercontent.com">
+          <p class="tiny" style="margin-top:6px;">Google Cloud Console → APIs & Services → Credentials → Create OAuth Client ID → type "Web application" → add this site's URL under "Authorized JavaScript origins" (no redirect URI or client secret needed).</p>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="connectGmail()">Connect Gmail</button>
+      </div>
+    </div>
+
+    <div class="section-title">AI provider — NVIDIA NIM</div>
+    <div class="card">
+      <div class="field">
+        <label>NVIDIA API key</label>
+        <input type="password" id="nvidiaKey" placeholder="nvapi-...">
+        <p class="tiny" style="margin-top:6px;">Get a free key at build.nvidia.com (NVIDIA NIM catalog) → pick any model → "Get API Key". Stored only in this browser.</p>
+      </div>
+      <div class="field">
+        <div class="row" style="margin-bottom:6px;"><label style="margin:0;">Model</label><button class="btn btn-ghost btn-sm" onclick="syncModels()">⟳ Sync models</button></div>
+        <select id="nvidiaModel"><option value="meta/llama-3.3-70b-instruct">meta/llama-3.3-70b-instruct</option></select>
+        <p class="tiny" id="modelSyncStatus" style="margin-top:6px;">Not synced yet — paste your key and tap "Sync models", or just Save (auto-syncs).</p>
+        <p class="tiny" style="margin-top:6px;">Note: pick a model that supports "function calling / tools" (e.g. Llama 3.1/3.3 instruct, Nemotron, Mixtral, Qwen2.5 instruct). Non-instruct / vision-only / embedding models won't work here.</p>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="saveAiSettings()">Save AI settings</button>
+    </div>
+
+    <div class="section-title">Automation safety default</div>
+    <div class="card">
+      <div class="field">
+        <label>Auto-send confidence threshold (%)</label>
+        <input type="number" id="confThreshold" min="50" max="100" value="85">
+      </div>
+      <p class="tiny">Used by rules set to "Trusted auto-send" — below this confidence, the agent falls back to asking for your approval instead of sending.</p>
+      <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="saveAutoSettings()">Save</button>
+    </div>
+
+    <div class="section-title">More</div>
+    <div class="card" style="display:flex; gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="showScreen('contacts')">Contacts</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="showScreen('reports')">Reports</button>
+    </div>
+
+    <div class="section-title">Danger zone</div>
+    <div class="card">
+      <button class="btn btn-danger btn-block" onclick="clearAllData()">Clear all local data</button>
+    </div>
+  </div>
+
+  <!-- ===================== CONTACTS ===================== -->
+  <div class="screen hide" id="screen-contacts">
+    <div class="section-title">Contacts</div>
+    <div class="card" id="contactsList" style="padding:0 14px;">
+      <div class="empty">No contacts yet — they'll appear here as you use Inbox / Chat.</div>
+    </div>
+  </div>
+
+  <!-- ===================== REPORTS ===================== -->
+  <div class="screen hide" id="screen-reports">
+    <div class="section-title">Activity</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="statSent">0</div><div class="stat-lbl">Emails sent</div></div>
+      <div class="stat-box"><div class="stat-num" id="statDrafted">0</div><div class="stat-lbl">Drafts created</div></div>
+      <div class="stat-box"><div class="stat-num" id="statAuto">0</div><div class="stat-lbl">Automations run</div></div>
+      <div class="stat-box"><div class="stat-num" id="statPending">0</div><div class="stat-lbl">Pending approvals</div></div>
+    </div>
+    <div class="section-title">By action type</div>
+    <div class="card" id="reportBars"></div>
+    <div class="section-title">Activity log</div>
+    <div class="card" id="logsList" style="padding:0 14px;"></div>
+  </div>
+
+  <button class="fab hide" id="chatFab" onclick="showScreen('chat')">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+  </button>
+
+  <div class="chatbar hide" id="chatbar">
+    <textarea id="chatInput" placeholder="Ask me anything about your inbox..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+    <button class="sendbtn" onclick="sendChat()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
+  </div>
+
+  <div class="bottomnav">
+    <button class="navbtn active" data-tab="chat" onclick="showScreen('chat')">
+      <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      Chat
+    </button>
+    <button class="navbtn" data-tab="inbox" onclick="showScreen('inbox')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+      Inbox
+    </button>
+    <button class="navbtn" data-tab="auto" onclick="showScreen('auto')">
+      <svg viewBox="0 0 24 24"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z"/></svg>
+      Automations
+    </button>
+    <button class="navbtn" data-tab="templates" onclick="showScreen('templates')">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg>
+      Templates
+    </button>
+    <button class="navbtn" data-tab="settings" onclick="showScreen('settings')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.9 2.9l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.6V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.9-2.9l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.6-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.9-2.9l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.6V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.9 2.9l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.6 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.6 1z"/></svg>
+      Settings
+    </button>
+  </div>
+
+</div>
+
+<div id="threadOverlay" class="hide"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ================= STATE / STORAGE ================= */
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem('eaa_'+k); return v===null? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ localStorage.setItem('eaa_'+k, JSON.stringify(v)); }
+};
+let state = {
+  settings: LS.get('settings', { nvidiaKey:'', model:'meta/llama-3.3-70b-instruct', availableModels:[], googleClientId:'', confThreshold:85, training:'' }),
+  rules: LS.get('rules', []),
+  templates: LS.get('templates', []),
+  contacts: LS.get('contacts', {}),
+  logs: LS.get('logs', []),
+  stats: LS.get('stats', { sent:0, drafted:0, autoRuns:0 }),
+  chatHistory: LS.get('chatHistory', []), // [{role:'user'|'model', parts:[...]}]
+  connectedEmail: LS.get('connectedEmail', null),
+};
+let accessToken = null;
+let tokenClient = null;
+let currentTab = 'chat';
+
+function persist(){
+  LS.set('settings', state.settings); LS.set('rules', state.rules); LS.set('templates', state.templates);
+  LS.set('contacts', state.contacts); LS.set('logs', state.logs); LS.set('stats', state.stats);
+  LS.set('chatHistory', state.chatHistory); LS.set('connectedEmail', state.connectedEmail);
+}
+function toast(msg){
+  const t = document.createElement('div'); t.className='toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 2600);
+}
+function addLog(text, type){
+  state.logs.unshift({ text, type: type||'info', ts: Date.now() });
+  state.logs = state.logs.slice(0, 200); persist(); renderLogs(); renderReports();
+}
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function timeAgo(ts){
+  const d = Date.now()-ts, m=Math.floor(d/60000);
+  if(m<1) return 'now'; if(m<60) return m+'m'; const h=Math.floor(m/60); if(h<24) return h+'h'; return Math.floor(h/24)+'d';
+}
+
+/* ================= NAV ================= */
+function showScreen(tab){
+  currentTab = tab;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hide'));
+  document.getElementById('screen-'+tab).classList.remove('hide');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.getElementById('chatbar').classList.toggle('hide', tab!=='chat');
+  document.getElementById('chatFab').classList.toggle('hide', tab==='chat');
+  if(tab==='inbox') loadInbox();
+  if(tab==='auto'){ renderRules(); renderApprovals(); }
+  if(tab==='templates') renderTemplates();
+  if(tab==='contacts') renderContacts();
+  if(tab==='reports') renderReports();
+}
+
+/* ================= INIT ================= */
+function updateStatusPill(){
+  const dot = document.getElementById('statusDot'), txt = document.getElementById('statusTxt'), sub = document.getElementById('topSub');
+  const hasAi = !!state.settings.nvidiaKey;
+  const hasGmail = !!accessToken;
+  if(hasAi && hasGmail){ dot.classList.add('on'); txt.textContent='Live'; sub.textContent = state.connectedEmail || 'Connected'; }
+  else if(hasAi){ dot.classList.remove('on'); txt.textContent='AI only'; sub.textContent='Connect Gmail →'; }
+  else { dot.classList.remove('on'); txt.textContent='Setup'; sub.textContent='Add NVIDIA API key in Settings'; }
+}
+window.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('nvidiaKey').value = state.settings.nvidiaKey||'';
+  document.getElementById('googleClientId').value = state.settings.googleClientId||'';
+  document.getElementById('confThreshold').value = state.settings.confThreshold||85;
+  document.getElementById('trainingNotes').value = state.settings.training||'';
+  if(state.settings.availableModels && state.settings.availableModels.length){
+    populateModelSelect(state.settings.availableModels);
+  } else {
+    document.getElementById('nvidiaModel').value = state.settings.model||'meta/llama-3.3-70b-instruct';
+  }
+  if(state.chatHistory.length===0){
+    pushChatBubble('ai', "Hi! I'm your email agent. Add your NVIDIA API key and connect Gmail in Settings, then ask me things like:\n\n\"Summarize my unread emails\"\n\"Draft a reply to the last email from Rahul\"\n\"Find emails about invoice 4521\"");
+  } else {
+    state.chatHistory.forEach(m=>{
+      if((m.role==='user'||m.role==='assistant') && m.content) pushChatBubble(m.role==='user'?'user':'ai', m.content, false);
+    });
+  }
+  updateStatusPill();
+  renderRules(); renderTemplates(); renderReports(); renderContacts();
+  if(state.connectedEmail){ initGoogle(true); }
+  if(state.settings.nvidiaKey){ syncModels(true); }
+  setInterval(()=>{ if(accessToken && state.rules.some(r=>r.enabled)) runAutomationsNow(false); }, 5*60*1000);
+});
+
+/* ================= NVIDIA MODEL SYNC ================= */
+async function syncModels(silent){
+  const key = (document.getElementById('nvidiaKey').value||'').trim() || state.settings.nvidiaKey;
+  const statusEl = document.getElementById('modelSyncStatus');
+  if(!key){ if(!silent) toast('Enter your NVIDIA API key first'); return; }
+  if(statusEl) statusEl.textContent = 'Syncing models…';
+  try{
+    const r = await fetch('/api/nvidia?path=models', { headers:{ 'Authorization':'Bearer '+key } });
+    const j = await r.json();
+    if(!r.ok) throw new Error((j.error&&j.error.message) || ('HTTP '+r.status));
+    const models = (j.data||[]).map(m=>m.id).sort();
+    if(models.length===0) throw new Error('No models returned');
+    state.settings.availableModels = models; persist();
+    populateModelSelect(models);
+    if(statusEl) statusEl.textContent = `Synced ${models.length} models · ${new Date().toLocaleTimeString()}`;
+    if(!silent) toast('Models synced');
+  }catch(e){
+    if(statusEl) statusEl.textContent = 'Sync failed: '+e.message+'. If this keeps failing, NVIDIA may be blocking direct browser calls (CORS) and you\'d need a tiny proxy server.';
+    if(!silent) toast('Model sync failed: '+e.message);
+  }
+}
+function populateModelSelect(models){
+  const sel = document.getElementById('nvidiaModel');
+  if(!sel) return;
+  const current = state.settings.model;
+  sel.innerHTML = models.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  if(current && models.includes(current)){ sel.value = current; }
+  else if(models.includes('meta/llama-3.3-70b-instruct')){ sel.value = 'meta/llama-3.3-70b-instruct'; }
+  else if(models.includes('meta/llama-3.1-70b-instruct')){ sel.value = 'meta/llama-3.1-70b-instruct'; }
+}
+
+/* ================= GOOGLE SIGN-IN (client-side, no backend) ================= */
+const GMAIL_SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/userinfo.email';
+function initGoogle(silent){
+  if(!window.google || !state.settings.googleClientId){ if(!silent) toast('Enter a Google OAuth Client ID first'); return; }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: state.settings.googleClientId,
+    scope: GMAIL_SCOPES,
+    prompt: silent ? '' : 'consent',
+    callback: async (resp)=>{
+      if(resp.error){ if(!silent) toast('Google sign-in failed: '+resp.error); return; }
+      accessToken = resp.access_token;
+      await fetchProfile();
+      updateStatusPill();
+      document.getElementById('gmailConnectedBlock').classList.remove('hide');
+      document.getElementById('gmailDisconnectedBlock').classList.add('hide');
+      toast('Gmail connected');
+    }
+  });
+  tokenClient.requestAccessToken({ prompt: silent ? '' : 'consent' });
+}
+function connectGmail(){
+  state.settings.googleClientId = document.getElementById('googleClientId').value.trim();
+  if(!state.settings.googleClientId){ toast('Paste your Google OAuth Client ID first'); return; }
+  persist();
+  initGoogle(false);
+}
+function disconnectGmail(){
+  accessToken=null; state.connectedEmail=null; persist();
+  document.getElementById('gmailConnectedBlock').classList.add('hide');
+  document.getElementById('gmailDisconnectedBlock').classList.remove('hide');
+  updateStatusPill(); toast('Gmail disconnected');
+}
+async function fetchProfile(){
+  try{
+    const r = await gmailFetch('https://gmail.googleapis.com/gmail/v1/users/me/profile');
+    state.connectedEmail = r.emailAddress; persist();
+    document.getElementById('connectedEmail').textContent = r.emailAddress;
+    document.getElementById('gmailConnectedBlock').classList.remove('hide');
+    document.getElementById('gmailDisconnectedBlock').classList.add('hide');
+  }catch(e){ console.warn(e); }
+}
+async function gmailFetch(url, opts){
+  opts = opts||{};
+  opts.headers = Object.assign({ Authorization: 'Bearer '+accessToken, 'Content-Type':'application/json' }, opts.headers||{});
+  const r = await fetch(url, opts);
+  if(!r.ok){ const t = await r.text(); throw new Error('Gmail API error '+r.status+': '+t.slice(0,200)); }
+  return r.json();
+}
+
+/* ================= SETTINGS ACTIONS ================= */
+function saveAiSettings(){
+  state.settings.nvidiaKey = document.getElementById('nvidiaKey').value.trim();
+  state.settings.model = document.getElementById('nvidiaModel').value;
+  persist(); updateStatusPill(); toast('AI settings saved');
+  syncModels(true);
+}
+function saveAutoSettings(){
+  state.settings.confThreshold = parseInt(document.getElementById('confThreshold').value)||85;
+  persist(); toast('Saved');
+}
+function saveTraining(){
+  state.settings.training = document.getElementById('trainingNotes').value;
+  persist(); toast('Training notes saved');
+}
+function clearAllData(){
+  if(!confirm('This deletes all local settings, rules, templates and history from this browser. Continue?')) return;
+  Object.keys(localStorage).filter(k=>k.startsWith('eaa_')).forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
+/* ================= CHAT ================= */
+function pushChatBubble(role, text, scroll){
+  const log = document.getElementById('chatlog');
+  const div = document.createElement('div');
+  div.className = 'msg '+(role==='user'?'user':'ai');
+  div.textContent = text;
+  log.appendChild(div);
+  if(scroll!==false) log.scrollIntoView({block:'end'});
+  return div;
+}
+function pushTyping(){
+  const log = document.getElementById('chatlog');
+  const div = document.createElement('div'); div.className='msg ai'; div.id='typingBubble';
+  div.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  log.appendChild(div); div.scrollIntoView({block:'end'}); return div;
+}
+function removeTyping(){ const t=document.getElementById('typingBubble'); if(t) t.remove(); }
+
+const TOOLS = [
+  { type:'function', function:{ name:'search_emails', description:'Search the user Gmail inbox using Gmail search syntax', parameters:{ type:'object', properties:{ query:{type:'string', description:'Gmail search query, e.g. is:unread, from:someone@x.com, subject:invoice'}, maxResults:{type:'number'} }, required:['query'] } } },
+  { type:'function', function:{ name:'read_email', description:'Get the full content of one email/thread by its Gmail message id', parameters:{ type:'object', properties:{ messageId:{type:'string'} }, required:['messageId'] } } },
+  { type:'function', function:{ name:'create_draft', description:'Create a Gmail draft — for a NEW email just fill to/subject/body and omit messageId. For a reply, also pass the messageId of the email being replied to.', parameters:{ type:'object', properties:{ messageId:{type:'string', description:'Optional. Only set this when replying to an existing email.'}, to:{type:'string'}, subject:{type:'string'}, body:{type:'string'} }, required:['to','subject','body'] } } },
+  { type:'function', function:{ name:'send_email', description:'Send a NEW email or a reply. Always requires user approval before actually sending — call this and the user will see a confirm card. For a brand-new email just fill to/subject/body and omit messageId; only include messageId when replying to an existing email.', parameters:{ type:'object', properties:{ messageId:{type:'string', description:'Optional. Only set this when replying to an existing email.'}, to:{type:'string'}, subject:{type:'string'}, body:{type:'string'} }, required:['to','subject','body'] } } },
+  { type:'function', function:{ name:'archive_email', description:'Archive an email (removes from inbox, does not delete)', parameters:{ type:'object', properties:{ messageId:{type:'string'} }, required:['messageId'] } } }
+];
+
+function sysPrompt(){
+  return `You are an email assistant with access to the user's Gmail via tools. Be concise and helpful.
+Rules:
+- Use search_emails / read_email freely and immediately when needed, no need to ask permission for reading.
+- NEVER claim you sent or archived something unless the tool result confirms it.
+- When drafting a reply, follow the user's tone/training notes below.
+- Always include a plausible "to", "subject" (use "Re: ..." for replies) and a full "body" when calling create_draft or send_email.
+- messageId is OPTIONAL on create_draft/send_email — only include it when replying to a specific existing email the user referenced. For a brand-new email (not a reply), never ask the user for a messageId — just send/draft it directly with to/subject/body.
+User's tone/training notes: ${state.settings.training || '(none set — be friendly and professional by default)'}`;
+}
+
+/* NVIDIA NIM uses the OpenAI-compatible /v1/chat/completions endpoint.
+   useTools=false is used for plain one-shot text generation (e.g. automation rule drafting)
+   where we don't want the model calling Gmail tools. */
+async function callNvidia(messages, useTools){
+  if(useTools===undefined) useTools = true;
+  const key = state.settings.nvidiaKey;
+  const model = state.settings.model || 'meta/llama-3.3-70b-instruct';
+  const url = '/api/nvidia?path=chat/completions';
+  const body = { model, messages, temperature:0.4 };
+  if(useTools){ body.tools = TOOLS; body.tool_choice = 'auto'; }
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':'Bearer '+key}, body: JSON.stringify(body) });
+  const j = await r.json();
+  if(!r.ok) throw new Error((j.error && j.error.message) || j.message || ('NVIDIA API error '+r.status));
+  return j;
+}
+
+async function sendChat(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  if(!state.settings.nvidiaKey){ toast('Add your NVIDIA API key in Settings first'); showScreen('settings'); return; }
+  input.value='';
+  pushChatBubble('user', text);
+  state.chatHistory.push({ role:'user', content:text });
+  persist();
+  pushTyping();
+  try{
+    await runChatLoop();
+  }catch(e){
+    removeTyping();
+    pushChatBubble('ai', '⚠️ '+e.message);
+  }
+}
+
+/* Keeps the request small on very long chats without ever cutting a tool_call/tool_response
+   pair in half (which would make the API reject the request). We only ever cut right before
+   a 'user' message, so each kept slice is always a complete, valid conversation turn. */
+function getTrimmedHistory(maxChars){
+  maxChars = maxChars || 40000;
+  const hist = state.chatHistory;
+  let total = 0, start = 0;
+  for(let i = hist.length - 1; i >= 0; i--){
+    const m = hist[i];
+    total += (m.content ? String(m.content).length : 0) + (m.tool_calls ? JSON.stringify(m.tool_calls).length : 0);
+    if(total > maxChars){ start = i; break; }
+  }
+  while(start > 0 && hist[start].role !== 'user') start--;
+  return hist.slice(start);
+}
+
+async function runChatLoop(){
+  let iterations = 0;
+  while(iterations < 6){
+    iterations++;
+    const messages = [{ role:'system', content: sysPrompt() }, ...getTrimmedHistory()];
+    const res = await callNvidia(messages, true);
+    const choice = res.choices && res.choices[0];
+    if(!choice){ removeTyping(); pushChatBubble('ai','No response from AI.'); return; }
+    const msg = choice.message || {};
+    const toolCalls = msg.tool_calls || [];
+    const textContent = (msg.content||'').trim();
+
+    const assistantMsg = { role:'assistant', content: msg.content || null };
+    if(toolCalls.length) assistantMsg.tool_calls = toolCalls;
+    state.chatHistory.push(assistantMsg);
+    persist();
+
+    if(toolCalls.length===0){
+      removeTyping();
+      if(textContent) pushChatBubble('ai', textContent);
+      return;
+    }
+
+    if(textContent){ removeTyping(); pushChatBubble('ai', textContent); pushTyping(); }
+
+    for(const tc of toolCalls){
+      let args = {};
+      try{ args = JSON.parse(tc.function.arguments||'{}'); }catch(e){}
+      const result = await executeTool(tc.function.name, args);
+      state.chatHistory.push({ role:'tool', tool_call_id: tc.id, content: JSON.stringify(result) });
+      persist();
+    }
+  }
+  removeTyping();
+  pushChatBubble('ai','Stopped after several steps — try rephrasing your request.');
+}
+
+/* Tools that need user approval render a card and PAUSE the loop by returning a "pending" status;
+   the loop already continues (the model will just get told "pending user approval"). */
+async function executeTool(name, args){
+  try{
+    if(name==='search_emails'){
+      const q = encodeURIComponent(args.query||'');
+      const r = await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=${args.maxResults||8}`);
+      if(!r.messages) return { count:0, results:[] };
+      const details = await Promise.all(r.messages.slice(0,8).map(m=>gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`)));
+      const results = details.map(d=>({ id:d.id, snippet:d.snippet, from: headerVal(d,'From'), subject: headerVal(d,'Subject'), date: headerVal(d,'Date') }));
+      results.forEach(r=>trackContact(r.from));
+      return { count: results.length, results };
+    }
+    if(name==='read_email'){
+      const d = await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${args.messageId}?format=full`);
+      return { from: headerVal(d,'From'), subject: headerVal(d,'Subject'), date: headerVal(d,'Date'), body: extractBody(d).slice(0,4000), threadId: d.threadId };
+    }
+    if(name==='create_draft'){
+      const raw = buildRawEmail(args.to, args.subject, args.body);
+      await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts`, { method:'POST', body: JSON.stringify({ message:{ raw, threadId: undefined } }) });
+      state.stats.drafted++; persist(); addLog('Draft created → '+args.to, 'draft');
+      pushChatBubble('ai', `📝 Draft saved to your Gmail drafts for ${args.to}.`);
+      return { status:'draft_created' };
+    }
+    if(name==='send_email'){
+      showApprovalCard({ kind:'send', to:args.to, subject:args.subject, body:args.body, onApprove: async ()=>{
+        const raw = buildRawEmail(args.to, args.subject, args.body);
+        await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, { method:'POST', body: JSON.stringify({ raw }) });
+        state.stats.sent++; persist(); addLog('Email sent → '+args.to, 'send'); toast('Email sent');
+      }});
+      return { status:'pending_user_approval', note:'A confirmation card was shown to the user. Do not claim it was sent.' };
+    }
+    if(name==='archive_email'){
+      await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${args.messageId}/modify`, { method:'POST', body: JSON.stringify({ removeLabelIds:['INBOX'] }) });
+      addLog('Email archived', 'archive');
+      return { status:'archived' };
+    }
+    return { error:'unknown tool' };
+  }catch(e){
+    return { error: e.message };
+  }
+}
+function headerVal(msg, name){
+  const h = (msg.payload && msg.payload.headers)||[];
+  const f = h.find(x=>x.name.toLowerCase()===name.toLowerCase());
+  return f? f.value : '';
+}
+function extractBody(msg){
+  function walk(part){
+    if(!part) return '';
+    if(part.mimeType==='text/plain' && part.body && part.body.data) return b64decode(part.body.data);
+    if(part.parts) for(const p of part.parts){ const r = walk(p); if(r) return r; }
+    if(part.body && part.body.data) return b64decode(part.body.data);
+    return '';
+  }
+  return walk(msg.payload) || msg.snippet || '';
+}
+function b64decode(s){ try{ return decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))); }catch(e){ return ''; } }
+function buildRawEmail(to, subject, body){
+  const msg = `To: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n${body}`;
+  return btoa(unescape(encodeURIComponent(msg))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function trackContact(fromHeader){
+  if(!fromHeader) return;
+  const m = fromHeader.match(/<(.+?)>/); const email = m? m[1] : fromHeader;
+  const name = fromHeader.replace(/<.+?>/,'').trim().replace(/"/g,'') || email;
+  state.contacts[email] = { name, email, last: Date.now() };
+  persist();
+}
+
+/* ================= APPROVAL CARDS (chat) ================= */
+function showApprovalCard({kind, to, subject, body, onApprove}){
+  const log = document.getElementById('chatlog');
+  const card = document.createElement('div');
+  card.className = 'actioncard';
+  card.innerHTML = `
+    <div class="hd">⚠ Needs your approval — ${kind==='send'?'Send email':'Action'}</div>
+    <div class="field-row">To: <b>${esc(to)}</b></div>
+    <div class="field-row">Subject: <b>${esc(subject)}</b></div>
+    <div class="body-preview">${esc(body)}</div>
+    <div class="actions">
+      <button class="btn btn-ok btn-sm" style="flex:1;">Approve & send</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1;">Cancel</button>
+    </div>`;
+  const [approveBtn, cancelBtn] = card.querySelectorAll('button');
+  approveBtn.onclick = async ()=>{
+    approveBtn.disabled=true; approveBtn.textContent='Sending...';
+    try{ await onApprove(); card.querySelector('.hd').textContent='✅ Sent'; card.querySelector('.actions').remove(); }
+    catch(e){ toast('Failed: '+e.message); approveBtn.disabled=false; approveBtn.textContent='Approve & send'; }
+  };
+  cancelBtn.onclick = ()=>{ card.querySelector('.hd').textContent='✕ Cancelled'; card.querySelector('.actions').remove(); };
+  log.appendChild(card); card.scrollIntoView({block:'end'});
+}
+
+/* ================= INBOX ================= */
+async function loadInbox(){
+  const list = document.getElementById('inboxList');
+  if(!accessToken){ list.innerHTML = `<div class="empty">Connect Gmail in Settings to see your inbox</div>`; return; }
+  list.innerHTML = `<div class="empty"><div class="typing" style="justify-content:center;"><span></span><span></span><span></span></div></div>`;
+  try{
+    const q = document.getElementById('inboxSearch').value.trim();
+    const r = await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20${q?'&q='+encodeURIComponent(q):''}`);
+    if(!r.messages || r.messages.length===0){ list.innerHTML = `<div class="empty">No messages found</div>`; return; }
+    const details = await Promise.all(r.messages.map(m=>gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`)));
+    list.innerHTML='';
+    details.forEach(d=>{
+      const from = headerVal(d,'From'); const unread = (d.labelIds||[]).includes('UNREAD');
+      trackContact(from);
+      const initials = (from.replace(/<.+?>/,'').trim()[0]||'?').toUpperCase();
+      const div = document.createElement('div');
+      div.className = 'mail-item'+(unread?' unread':'');
+      div.innerHTML = `<div class="avatar">${initials}</div><div class="mail-meta">
+        <div class="mail-top"><div class="mail-sender">${esc(from.replace(/<.+?>/,'').trim()||from)}</div><div class="mail-time">${timeAgo(new Date(headerVal(d,'Date')).getTime()||Date.now())}</div></div>
+        <div class="mail-subject">${esc(headerVal(d,'Subject')||'(no subject)')}</div>
+        <div class="mail-snippet">${esc(d.snippet||'')}</div></div>`;
+      div.onclick = ()=>openThread(d.id);
+      list.appendChild(div);
+    });
+  }catch(e){ list.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+async function openThread(id){
+  const ov = document.getElementById('threadOverlay');
+  ov.classList.remove('hide');
+  ov.innerHTML = `<div class="thd-top"><button class="iconbtn" onclick="closeThread()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div style="font-weight:700;">Message</div></div><div class="thd-body"><div class="empty">Loading...</div></div>`;
+  try{
+    const d = await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`);
+    const body = ov.querySelector('.thd-body');
+    body.innerHTML = `<div class="card">
+      <div class="field-row" style="font-size:14px;"><b>${esc(headerVal(d,'From'))}</b></div>
+      <div class="tiny" style="margin-bottom:8px;">${esc(headerVal(d,'Date'))}</div>
+      <div style="font-weight:700; margin-bottom:10px;">${esc(headerVal(d,'Subject')||'(no subject)')}</div>
+      <div class="muted" style="white-space:pre-wrap;">${esc(extractBody(d).slice(0,6000))}</div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="askAiAboutThread('${id}')">Ask AI about this email</button>`;
+  }catch(e){ ov.querySelector('.thd-body').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function closeThread(){ document.getElementById('threadOverlay').classList.add('hide'); }
+function askAiAboutThread(id){
+  closeThread(); showScreen('chat');
+  document.getElementById('chatInput').value = `Draft a reply to email ${id}`;
+  sendChat();
+}
+
+/* ================= AUTOMATION RULES ================= */
+function renderRules(){
+  const wrap = document.getElementById('rulesList');
+  if(state.rules.length===0){ wrap.innerHTML = `<div class="card empty">No automation rules yet. Tap "+ New rule" to create one.</div>`; return; }
+  wrap.innerHTML='';
+  state.rules.forEach(rule=>{
+    const div = document.createElement('div'); div.className='card rule-card';
+    div.innerHTML = `<div class="rule-head">
+      <div><div class="rule-name">${esc(rule.name)}</div>
+      <div class="rule-desc">When ${esc(rule.condSummary)} → ${esc(rule.actionSummary)}</div></div>
+      <label class="switch"><input type="checkbox" ${rule.enabled?'checked':''} onchange="toggleRule('${rule.id}')"><span class="slider"></span></label>
+    </div>
+    <div class="rule-foot">
+      <span class="chip ${rule.safety==='autosend'?'red':rule.safety==='approval'?'amber':'blue'}">${rule.safety==='autosend'?'Trusted auto-send':rule.safety==='approval'?'Approval required':'Draft only'}</span>
+      <span class="chip blue">${rule.processed?.length||0} processed</span>
+      <button class="btn btn-ghost btn-sm" onclick="deleteRule('${rule.id}')" style="margin-left:auto;">Delete</button>
+    </div>`;
+    wrap.appendChild(div);
+  });
+}
+function toggleRule(id){ const r = state.rules.find(x=>x.id===id); r.enabled=!r.enabled; persist(); renderRules(); }
+function deleteRule(id){ if(!confirm('Delete this rule?')) return; state.rules = state.rules.filter(x=>x.id!==id); persist(); renderRules(); }
+
+function openRuleModal(){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modal-wrap" onclick="if(event.target===this) closeModal()"><div class="modal">
+    <div class="mhead"><h3>New automation rule</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>
+    <div class="field"><label>Rule name</label><input type="text" id="rName" placeholder="e.g. Auto-reply to support questions"></div>
+    <div class="field"><label>Only run on emails matching (Gmail search)</label><input type="text" id="rQuery" placeholder="is:unread OR subject:support"></div>
+    <div class="field"><label>What should the AI do?</label><textarea id="rInstruction" placeholder="Reply politely confirming we received their message and will respond within 24 hours."></textarea></div>
+    <div class="field"><label>Safety level</label>
+      <select id="rSafety">
+        <option value="draft">Draft only — saves as Gmail draft</option>
+        <option value="approval">Approval required — I approve before sending</option>
+        <option value="autosend">Trusted auto-send — sends if AI confidence is high</option>
+      </select>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveRule()">Create rule</button>
+  </div></div>`;
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+function saveRule(){
+  const name = document.getElementById('rName').value.trim();
+  const query = document.getElementById('rQuery').value.trim() || 'is:unread';
+  const instruction = document.getElementById('rInstruction').value.trim();
+  const safety = document.getElementById('rSafety').value;
+  if(!name || !instruction){ toast('Fill in name and instruction'); return; }
+  state.rules.push({
+    id: 'r'+Date.now(), name, query, instruction, safety, enabled:true, processed:[],
+    condSummary: query, actionSummary: safety==='draft'?'draft a reply':safety==='approval'?'prepare reply for approval':'auto-send reply'
+  });
+  persist(); closeModal(); renderRules(); toast('Rule created');
+}
+
+async function runAutomationsNow(manual){
+  if(!accessToken){ if(manual) toast('Connect Gmail first'); return; }
+  if(!state.settings.nvidiaKey){ if(manual) toast('Add NVIDIA API key first'); return; }
+  const active = state.rules.filter(r=>r.enabled);
+  if(active.length===0){ if(manual) toast('No active rules'); return; }
+  if(manual) toast('Running automations...');
+  for(const rule of active){
+    try{
+      const r = await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(rule.query)}&maxResults=10`);
+      const msgs = (r.messages||[]).filter(m=>!rule.processed.includes(m.id));
+      for(const m of msgs){
+        const d = await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`);
+        const from = headerVal(d,'From'); const subject = headerVal(d,'Subject');
+        const body = extractBody(d).slice(0,3000);
+        const gen = await callNvidia([{ role:'user', content:
+          `Email from: ${from}\nSubject: ${subject}\nBody:\n${body}\n\nInstruction: ${rule.instruction}\n\nWrite ONLY the reply email body text (no subject line, no explanation), then on a new final line write exactly: CONFIDENCE: <0-100>` }], false);
+        const text = (gen.choices && gen.choices[0] && gen.choices[0].message && gen.choices[0].message.content) || '';
+        const confMatch = text.match(/CONFIDENCE:\s*(\d+)/i);
+        const confidence = confMatch? parseInt(confMatch[1]) : 70;
+        const replyBody = text.replace(/CONFIDENCE:\s*\d+/i,'').trim();
+        const toEmail = (from.match(/<(.+?)>/)||[,from])[1];
+        const replySubject = subject.startsWith('Re:')? subject : 'Re: '+subject;
+
+        rule.processed.push(m.id);
+        state.stats.autoRuns++;
+
+        if(rule.safety==='draft'){
+          await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts`, { method:'POST', body: JSON.stringify({ message:{ raw: buildRawEmail(toEmail, replySubject, replyBody) } }) });
+          state.stats.drafted++; addLog(`Automation "${rule.name}" drafted a reply to ${toEmail}`, 'draft');
+        } else if(rule.safety==='approval' || (rule.safety==='autosend' && confidence < state.settings.confThreshold)){
+          state.approvals = state.approvals || [];
+          LS.set('approvals', (LS.get('approvals',[])).concat([{ id:'a'+Date.now()+Math.random(), rule: rule.name, to: toEmail, subject: replySubject, body: replyBody, confidence }]));
+          addLog(`Automation "${rule.name}" queued a reply to ${toEmail} for approval (confidence ${confidence}%)`, 'approval');
+        } else {
+          await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, { method:'POST', body: JSON.stringify({ raw: buildRawEmail(toEmail, replySubject, replyBody) }) });
+          state.stats.sent++; addLog(`Automation "${rule.name}" auto-sent a reply to ${toEmail} (confidence ${confidence}%)`, 'send');
+        }
+        persist();
+      }
+    }catch(e){ addLog(`Automation "${rule.name}" error: ${e.message}`, 'error'); }
+  }
+  persist(); renderRules(); renderApprovals(); renderReports();
+  if(manual) toast('Automations run complete');
+}
+function renderApprovals(){
+  const list = LS.get('approvals', []);
+  const wrap = document.getElementById('approvalsList');
+  if(list.length===0){ wrap.innerHTML = `<div class="card empty" style="padding:24px;">Nothing waiting for approval</div>`; return; }
+  wrap.innerHTML='';
+  list.forEach(a=>{
+    const div = document.createElement('div'); div.className='card';
+    div.innerHTML = `<div class="field-row">Rule: <b>${esc(a.rule)}</b> <span class="chip amber" style="margin-left:6px;">${a.confidence}% confidence</span></div>
+      <div class="field-row">To: <b>${esc(a.to)}</b></div>
+      <div class="field-row">Subject: <b>${esc(a.subject)}</b></div>
+      <div class="body-preview">${esc(a.body)}</div>
+      <div class="actions"><button class="btn btn-ok btn-sm" style="flex:1;" onclick="approveQueued('${a.id}')">Approve & send</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="rejectQueued('${a.id}')">Reject</button></div>`;
+    wrap.appendChild(div);
+  });
+}
+async function approveQueued(id){
+  const list = LS.get('approvals', []); const a = list.find(x=>x.id===id); if(!a) return;
+  try{
+    await gmailFetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, { method:'POST', body: JSON.stringify({ raw: buildRawEmail(a.to, a.subject, a.body) }) });
+    state.stats.sent++; persist(); addLog(`Approved & sent reply to ${a.to}`, 'send');
+    LS.set('approvals', list.filter(x=>x.id!==id)); renderApprovals(); renderReports(); toast('Sent');
+  }catch(e){ toast('Failed: '+e.message); }
+}
+function rejectQueued(id){
+  const list = LS.get('approvals', []).filter(x=>x.id!==id);
+  LS.set('approvals', list); renderApprovals(); toast('Rejected');
+}
+
+/* ================= TEMPLATES ================= */
+function renderTemplates(){
+  const wrap = document.getElementById('templatesList');
+  if(state.templates.length===0){ wrap.innerHTML = `<div class="empty">No templates yet</div>`; return; }
+  wrap.innerHTML='';
+  state.templates.forEach(t=>{
+    const div = document.createElement('div'); div.className='tpl-item';
+    div.innerHTML = `<div class="row"><b>${esc(t.title)}</b><button class="btn btn-ghost btn-sm" onclick="deleteTemplate('${t.id}')">Delete</button></div>
+      <div class="muted" style="margin-top:4px;">${esc(t.body)}</div>`;
+    wrap.appendChild(div);
+  });
+}
+function openTemplateModal(){
+  document.getElementById('modalRoot').innerHTML = `<div class="modal-wrap" onclick="if(event.target===this) closeModal()"><div class="modal">
+    <div class="mhead"><h3>New template</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>
+    <div class="field"><label>Title</label><input type="text" id="tTitle" placeholder="e.g. Meeting follow-up"></div>
+    <div class="field"><label>Body</label><textarea id="tBody" placeholder="Thanks for the meeting today..."></textarea></div>
+    <button class="btn btn-primary btn-block" onclick="saveTemplate()">Save template</button>
+  </div></div>`;
+}
+function saveTemplate(){
+  const title = document.getElementById('tTitle').value.trim();
+  const body = document.getElementById('tBody').value.trim();
+  if(!title||!body){ toast('Fill both fields'); return; }
+  state.templates.push({ id:'t'+Date.now(), title, body }); persist(); closeModal(); renderTemplates(); toast('Template saved');
+}
+function deleteTemplate(id){ state.templates = state.templates.filter(t=>t.id!==id); persist(); renderTemplates(); }
+
+/* ================= CONTACTS ================= */
+function renderContacts(){
+  const wrap = document.getElementById('contactsList');
+  const list = Object.values(state.contacts).sort((a,b)=>b.last-a.last);
+  if(list.length===0){ wrap.innerHTML = `<div class="empty">No contacts yet — they'll appear here as you use Inbox / Chat.</div>`; return; }
+  wrap.innerHTML='';
+  list.forEach(c=>{
+    const div = document.createElement('div'); div.className='contact-item row';
+    div.innerHTML = `<div><b>${esc(c.name)}</b><div class="tiny">${esc(c.email)}</div></div><div class="tiny">${timeAgo(c.last)}</div>`;
+    wrap.appendChild(div);
+  });
+}
+
+/* ================= REPORTS ================= */
+function renderLogs(){
+  const wrap = document.getElementById('logsList');
+  if(!wrap) return;
+  if(state.logs.length===0){ wrap.innerHTML = `<div class="empty">No activity yet</div>`; return; }
+  wrap.innerHTML='';
+  state.logs.slice(0,50).forEach(l=>{
+    const div = document.createElement('div'); div.className='tpl-item';
+    const chipClass = l.type==='send'?'green':l.type==='error'?'red':l.type==='approval'?'amber':'blue';
+    div.innerHTML = `<div class="row"><span style="font-size:13px;">${esc(l.text)}</span><span class="tiny">${timeAgo(l.ts)}</span></div>`;
+    wrap.appendChild(div);
+  });
+}
+function renderReports(){
+  document.getElementById('statSent') && (document.getElementById('statSent').textContent = state.stats.sent);
+  document.getElementById('statDrafted') && (document.getElementById('statDrafted').textContent = state.stats.drafted);
+  document.getElementById('statAuto') && (document.getElementById('statAuto').textContent = state.stats.autoRuns);
+  const pending = LS.get('approvals',[]).length;
+  document.getElementById('statPending') && (document.getElementById('statPending').textContent = pending);
+  const bars = document.getElementById('reportBars');
+  if(bars){
+    const max = Math.max(state.stats.sent, state.stats.drafted, state.stats.autoRuns, 1);
+    bars.innerHTML = ['sent','drafted','autoRuns'].map(k=>{
+      const label = k==='sent'?'Sent':k==='drafted'?'Drafted':'Automation runs';
+      const val = state.stats[k];
+      return `<div class="bar-row"><div class="bl"><span>${label}</span><span>${val}</span></div><div class="bar-track"><div class="bar-fill" style="width:${(val/max*100)}%"></div></div></div>`;
+    }).join('');
+  }
+  renderLogs();
+}
+</script>
+</body>
+</html>
