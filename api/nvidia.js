@@ -20,6 +20,8 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const controller = new AbortController();
+    const killer = setTimeout(() => controller.abort(), 55000); // stay under the 60s function limit
     const upstream = await fetch(url, {
       method: req.method,
       headers: {
@@ -27,13 +29,17 @@ module.exports = async (req, res) => {
         Authorization: auth,
       },
       body: req.method === 'GET' || req.method === 'HEAD' ? undefined : JSON.stringify(req.body || {}),
+      signal: controller.signal,
     });
+    clearTimeout(killer);
     const text = await upstream.text();
     res.status(upstream.status);
     res.setHeader('Content-Type', 'application/json');
     res.send(text);
   } catch (e) {
-    res.status(500).json({ error: { message: 'Proxy error: ' + e.message } });
+    const msg = e.name === 'AbortError'
+      ? 'NVIDIA API took too long to respond (>55s). Try a smaller/faster model.'
+      : 'Proxy error: ' + e.message;
+    res.status(504).json({ error: { message: msg } });
   }
 };
-      
